@@ -39,6 +39,39 @@ class Particle:
         self.destroyed = True
 
 
+class Pop(Particle):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.circle = pygame.Surface((300, 300))
+        self.circle.fill((0, 0, 0))
+        pygame.draw.circle(self.circle, (255, 255, 255), (150, 150), 150)
+        self.circle.set_colorkey((0, 0, 0))
+
+    def draw(self, surf, offset=(0, 0)):
+        x = self.position.x + offset[0]
+        y = self.position.y + offset[1]
+
+        c1_outer = 24 * (1 + 4*self.through())
+        c1_inner = self.through()*3 * 50
+        if (c1_outer > c1_inner):
+            pygame.draw.circle(surf, (255, 255, 255), (x, y), radius=c1_outer, width = int((c1_outer - c1_inner)*2) + 1)
+
+        c2_outer = 400 * (self.through()**0.5)
+        c2_width = int(5 * (1 - self.through())) + 1
+        if (c1_outer > c1_inner):
+            pygame.draw.circle(surf, (255, 255, 255), (x, y), radius=c2_outer, width=c2_width)
+
+        c3_radius = 1200 * self.through()**0.5
+        c3_width = int(5 * (1 - self.through()))+1
+        pygame.draw.circle(surf, (255, 255, 255), (x, y), radius = c3_radius, width = c3_width)
+
+        fade_size = int(48 * ((self.through()**0.5 * 10)+1))
+        fade = pygame.transform.scale(self.circle, (fade_size, fade_size))
+        fade.set_alpha(int(255 * (1 - self.through() * 1.4)))
+        surf.blit(fade, (x - fade_size//2, y - fade_size//2))
+
+
+
 class Poof(Particle):
 
     def __init__(self, position):

@@ -28,12 +28,14 @@ class Game:
 
         pygame.display.set_caption(f"{c.CAPTION}")
 
+        self.fps_font = pygame.font.SysFont("monospace", 20)
+        self.fps_log = [0] * 100
+
         asyncio.run(self.main())
 
     def shake(self, amt=15):
         self.shake_amp = amt
         self.since_shake = 0
-
 
     def get_shake_offset(self):
         magnitude = math.cos(self.since_shake * 60) * self.shake_amp
@@ -45,10 +47,14 @@ class Game:
     async def main(self):
         current_frame = f.MainFrame(self)
         current_frame.load()
-        self.clock.tick(60)
+        self.clock.tick(c.FRAMERATE)
 
         while True:
             dt, events = self.get_events()
+            self.fps_log = self.fps_log[1:] + [1 / dt]
+            fps = sum(self.fps_log)/100
+            fps_text = self.fps_font.render(f"FPS: {int(fps)}",True,(255, 255, 255))
+
             if dt == 0:
                 dt = 1/100000
             if dt > 0.05:
@@ -57,13 +63,13 @@ class Game:
             current_frame.draw(self.small_screen, self.get_shake_offset().get_position())
             scaled = pygame.transform.scale(self.small_screen, c.SCALED_WINDOW_SIZE)
             self.screen.blit(scaled, (0, 0))
+            self.screen.blit(fps_text, (0, 0))
             pygame.display.flip()
             await asyncio.sleep(0)
 
             if current_frame.done:
                 current_frame = current_frame.next_frame()
                 current_frame.load()
-
 
     def get_events(self):
 
