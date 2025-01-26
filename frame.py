@@ -3,6 +3,7 @@ import time
 
 import pygame
 
+from Button import Button
 from bee import Bee
 from grid import Grid
 import constants as c
@@ -37,10 +38,10 @@ class MainFrame(Frame):
         self.grid = Grid(*c.GRID_SIZE)
         self.grid.load_from_file(f"assets/maps/level_{random.choice([1, 2, 3, 4, 5])}.txt")
         self.players = [Bee(self, Bee.BeeControl(*c.P1_CONTROL), color=c.P1_COLOR, position=self.grid.spawn_position(1)),
-                        Bee(self, Bee.BeeControl(*c.P2_CONTROL), color=c.P2_COLOR, position=self.grid.spawn_position(2))]\
-            # ,
-            #             Bee(self, Bee.BeeControl(*c.P3_CONTROL), color=c.P3_COLOR, position=self.grid.spawn_position(3)),
-            #             Bee(self, Bee.BeeControl(*c.P4_CONTROL), color=c.P4_COLOR, position=self.grid.spawn_position(4))]
+                        Bee(self, Bee.BeeControl(*c.P2_CONTROL), color=c.P2_COLOR, position=self.grid.spawn_position(2)),
+                        Bee(self, Bee.BeeControl(*c.P3_CONTROL), color=c.P3_COLOR, position=self.grid.spawn_position(3)),
+                        Bee(self, Bee.BeeControl(*c.P4_CONTROL), color=c.P4_COLOR, position=self.grid.spawn_position(4))]
+        self.players = self.players[:self.game.player_count]
         self.particles = []
         self.round_over = False
         self.black = pygame.Surface(c.WINDOW_SIZE)
@@ -123,16 +124,71 @@ class MainFrame(Frame):
     def next_frame(self):
         return ScoreFrame(self.game)
 
+class MenuFrame(Frame):
+    def load(self):
+        self.buttons = [
+            Button(
+                ImageManager.load_copy("assets/images/button_back.png"),
+                pos=(200, c.WINDOW_HEIGHT * 0.37),
+                text="2 players",
+                on_click=self.start_2_player,
+                hover_surf=ImageManager.load_copy("assets/images/button_back_hover.png")
+            ),
+            Button(
+                ImageManager.load_copy("assets/images/button_back.png"),
+                pos=(200, c.WINDOW_HEIGHT * 0.5),
+                text="3 players",
+                on_click=self.start_3_player,
+                hover_surf=ImageManager.load_copy("assets/images/button_back_hover.png")
+            ),
+            Button(
+                ImageManager.load_copy("assets/images/button_back.png"),
+                pos=(200, c.WINDOW_HEIGHT * 0.63),
+                text="4 players",
+                on_click=self.start_4_player,
+                hover_surf=ImageManager.load_copy("assets/images/button_back_hover.png")
+            ),
+        ]
+
+    def update(self, dt, events):
+        for button in self.buttons:
+            button.update(dt, events)
+
+    def draw(self, surface, offset=(0, 0)):
+        surface.fill((0, 0, 0))
+        for button in self.buttons:
+            button.draw(surface, *offset)
+
+
+    def start_2_player(self):
+        self.game.player_count = 2
+        self.end_frame()
+
+    def start_3_player(self):
+        self.game.player_count = 3
+        self.end_frame()
+
+    def start_4_player(self):
+        self.game.player_count = 4
+        self.end_frame()
+
+    def end_frame(self):
+        self.done = True
+
+    def next_frame(self):
+        return ScoreFrame(self.game)
+
 class ScoreFrame(Frame):
     def load(self):
         y = c.WINDOW_HEIGHT//2
         self.age = 0
         self.incremented = False
 
-        self.placards = [PlayerPlacard((c.WINDOW_WIDTH*0.125, y), 1, self),
-                         PlayerPlacard((c.WINDOW_WIDTH*0.375, y), 2, self),
-                         PlayerPlacard((c.WINDOW_WIDTH*0.625, y), 3, self),
-                         PlayerPlacard((c.WINDOW_WIDTH*0.875, y), 4, self)]
+        self.placards = []
+        x = (self.game.player_count - 1) * -0.105
+        for i in range(self.game.player_count):
+            self.placards.append(PlayerPlacard((c.WINDOW_WIDTH//2 + c.WINDOW_WIDTH * x, y), i+1, self))
+            x += 0.21
 
     def update(self, dt, events):
         for placard in self.placards:

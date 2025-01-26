@@ -33,6 +33,7 @@ class Game:
 
         self.scores = {1:0, 2:0, 3:0, 4:0}
         self.last_winner = None
+        self.player_count = 3
 
         asyncio.run(self.main())
 
@@ -54,7 +55,7 @@ class Game:
         return direction * magnitude
 
     async def main(self):
-        current_frame = f.ScoreFrame(self)
+        current_frame = f.MenuFrame(self)
         current_frame.load()
         self.clock.tick(c.FRAMERATE)
 
