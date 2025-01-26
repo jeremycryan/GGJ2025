@@ -29,6 +29,16 @@ class Grid:
         self.set_tile_poses()
         self.update_tile_sprites()
 
+    def spawn_position(self, number):
+        for row in self.tiles:
+            for tile in row:
+                if (number == 1 and tile.tile_type == c.TILE_SPAWN_P1) or \
+                        (number == 2 and tile.tile_type == c.TILE_SPAWN_P2) or \
+                        (number == 3 and tile.tile_type == c.TILE_SPAWN_P3) or \
+                        (number == 4 and tile.tile_type == c.TILE_SPAWN_P4):
+                    return self.tile_coordinate_to_position(*tile.coordinate).get_position()
+        return None
+
     def all_tiles(self):
         for row in self.tiles:
             for tile in row:
@@ -115,11 +125,11 @@ class Tile:
         self.tile_type = tile_type
         self.surface = pygame.Surface(c.TILE_SIZE)
         if (tile_type == c.TILE_FLOOR):
-            self.surface.fill((135, 200, 120))
+            self.surface = ImageManager.load("assets/images/grass.png")
         elif tile_type == c.TILE_WALL:
             self.surface.fill(c.BLACK)
-        elif tile_type == c.TILE_SPAWN:
-            self.surface.fill(c.LIGHT_GRAY)
+        elif tile_type in [c.TILE_SPAWN_P1, c.TILE_SPAWN_P2, c.TILE_SPAWN_P3, c.TILE_SPAWN_P4]:
+            self.surface = ImageManager.load("assets/images/spawn.png")
         else:
             self.surface.fill(c.GRAY)
         self.coordinate = (0, 0)

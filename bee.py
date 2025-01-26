@@ -18,10 +18,14 @@ class Bee:
     DASH_MULTIPLIER = 2.6
     BRAKE_AMOUNT = 0.03
 
-    def __init__(self, frame, control=None):
+    def __init__(self, frame, control=None, color=None, position = None):
         self.control = control if control is not None else Bee.BeeControl()
-        self.pose = Pose((c.GRID_WIDTH_PIXELS //2 + random.random() * 800 - 400,
-                          c.GRID_HEIGHT_PIXELS //2 + random.random() * 200 - 100))
+        if position == None:
+            position = (c.GRID_WIDTH_PIXELS //2 + random.random() * 800 - 400,
+                          c.GRID_HEIGHT_PIXELS //2 + random.random() * 200 - 100)
+
+        self.pose = Pose(position,
+                         random.random() * 360)
         self.speed = 0
 
         self.braking = False
@@ -32,18 +36,37 @@ class Bee:
         self.surface = ImageManager.load_copy("assets/images/bee.png")
         self.radius = 24
         self.frame = frame
-        self.color = [random.random() * 55 + 200, random.random() * 255, 30]
-        random.shuffle(self.color)
-        tint = self.surface.copy()
-        tint.fill(self.color)
-        self.surface.blit(tint, (0, 0), special_flags=pygame.BLEND_MULT)
-        self.surface.set_colorkey(self.surface.get_at((0, 0)))
+        if color is not None:
+            self.color = color
+        else:
+            self.color = [random.random() * 55 + 200, random.random() * 255, 30]
+            random.shuffle(self.color)
+
+        self.surface = Bee.get_bee_surf(self.color)
+
         self.age = 0
         self.dead = False
         self.inactive = False
+        self.invulnerable = False
+        self.controllable = True
         self.already_bounced_with = []
 
-        self.debug = True
+        self.shadow = pygame.Surface((self.radius * 2, self.radius * 2))
+        self.shadow.fill(c.WHITE)
+        pygame.draw.circle(self.shadow, c.BLACK, (self.radius, self.radius), self.radius)
+        self.shadow.set_colorkey(c.WHITE)
+        self.shadow.set_alpha(50)
+
+        self.debug = False
+
+    @staticmethod
+    def get_bee_surf(color):
+        surface = ImageManager.load_copy("assets/images/bee.png")
+        tint = surface.copy()
+        tint.fill(color)
+        surface.blit(tint, (0, 0), special_flags=pygame.BLEND_MULT)
+        surface.set_colorkey(surface.get_at((0, 0)))
+        return surface
 
     def stinger_location(self):
         heading = Pose((0, 0), self.pose.angle + 180 * self.flipped + 180)
@@ -71,7 +94,7 @@ class Bee:
             other.die()
 
     def die(self):
-        if not self.dead:
+        if not self.dead and not self.invulnerable:
             self.frame.particles.append(Pop(self.pose.get_position(), duration = 1))
             self.frame.game.shake(15)
             self.frame.freeze(0.7)
@@ -123,6 +146,8 @@ class Bee:
         for bee in bees:
             if bee == self:
                 continue
+            if bee.inactive:
+                continue
             if bee in self.already_bounced_with:
                 continue
             if (bee.pose - self.pose).magnitude() < bee.radius + self.radius:
@@ -131,6 +156,7 @@ class Bee:
     def bounce(self, other):
         if self.inactive or other.inactive:
             return
+
         self.speed *= -0.75
         other.speed *= -0.75
 
@@ -162,14 +188,14 @@ class Bee:
 
         velocity = Pose((0, 0))
 
-        if pressed[self.control.flip] and not self.braking:
+        if pressed[self.control.flip] and self.controllable and not self.braking:
             self.start_brake()
 
         if not self.braking:
             self.flipped -= self.UNFLIP_SPEED * dt
             if self.flipped < 0:
                 self.flipped = 0
-            if pressed[self.control.turn_right]:
+            if pressed[self.control.turn_right] and self.controllable:
                 self.pose.angle += self.ROTATION * dt
             else:
                 self.pose.angle -= self.ROTATION * dt
@@ -191,7 +217,7 @@ class Bee:
 
             self.since_brake += dt
             if self.since_brake > self.BRAKE_COOLDOWN:
-                if not pressed[self.control.flip]:
+                if not pressed[self.control.flip] or not self.controllable:
                     self.stop_brake()
 
             velocity = self.start_brake_pose.get_unit_vector() * self.speed
@@ -202,7 +228,14 @@ class Bee:
         if self.inactive:
             return
 
-        rotated = pygame.transform.rotate(self.surface, self.pose.angle + self.flipped * 180)
+        surface.blit(self.shadow, (self.pose.x + offset[0] - self.radius, self.pose.y + offset[1] + 12 - self.radius))
+
+        stretch_amt = 1 + 0.1 * self.speed / self.TOP_SPEED
+        w = self.surface.get_width() * stretch_amt
+        h = self.surface.get_height() / stretch_amt
+        stretched = pygame.transform.scale(self.surface, (w, h))
+
+        rotated = pygame.transform.rotate(stretched, self.pose.angle + self.flipped * 180)
         x = self.pose.x + offset[0] - rotated.get_width()//2
         y = self.pose.y + offset[1] - rotated.get_height()//2
 
@@ -217,7 +250,7 @@ class Bee:
 
 
     class BeeControl:
-        def __init__(self, turn_right=pygame.K_z, flip=pygame.K_x):
+        def __init__(self, turn_right=pygame.K_q, flip=pygame.K_w):
             self.turn_right = turn_right
             self.flip = flip
 

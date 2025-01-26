@@ -31,7 +31,16 @@ class Game:
         self.fps_font = pygame.font.SysFont("monospace", 20)
         self.fps_log = [0] * 100
 
+        self.scores = {1:0, 2:0, 3:0, 4:0}
+        self.last_winner = None
+
         asyncio.run(self.main())
+
+    def store_last_winner(self, player):
+        self.last_winner = player
+
+    def give_point(self, player):
+        self.scores[player] += 1
 
     def shake(self, amt=15):
         self.shake_amp = amt
@@ -45,7 +54,7 @@ class Game:
         return direction * magnitude
 
     async def main(self):
-        current_frame = f.MainFrame(self)
+        current_frame = f.ScoreFrame(self)
         current_frame.load()
         self.clock.tick(c.FRAMERATE)
 
