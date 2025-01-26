@@ -63,9 +63,11 @@ class PlayerPlacard:
         if self.player == 4:
             color = c.P4_COLOR
 
-        bee = Bee.get_bee_surf(color)
+        bee = Bee(self.frame, None, color, position=(0, 0))
 
-        base.blit(bee, (base.get_width()//2 - bee.get_width()//2, base.get_height()//2 - bee.get_height()//2 + 25))
+        bee.draw(base, (base.get_width()//2, base.get_height()//2 + 25))
+
+        #base.blit(bee, (base.get_width()//2 - bee.get_width()//2, base.get_height()//2 - bee.get_height()//2 + 25))
 
         return base
 

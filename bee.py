@@ -7,6 +7,9 @@ import random
 
 from image_manager import ImageManager
 
+from pyracy.sprite_tools import Sprite, Animation
+
+
 class Bee:
     TOP_SPEED = 300
     ACCELERATION = 500
@@ -33,14 +36,41 @@ class Bee:
         self.flipped = 0
         self.since_brake = 0
 
-        self.surface = ImageManager.load_copy("assets/images/bee.png")
-        self.radius = 24
-        self.frame = frame
         if color is not None:
             self.color = color
         else:
             self.color = [random.random() * 55 + 200, random.random() * 255, 30]
             random.shuffle(self.color)
+
+        idle_animation = Animation(ImageManager.load("assets/images/sheet_bee.png"), (5, 1), 5)
+        self.sprite = Sprite(10)
+        self.sprite.add_animation({
+            "Idle": idle_animation
+        }, loop=True)
+        self.sprite.start_animation("Idle")
+
+        bubble_sprite = ImageManager.load_copy("assets/images/sheet_bubble.png")
+        bubble_idle = Animation(bubble_sprite, (5, 1), 5)
+        self.bubble_sprite = Sprite(10)
+        self.bubble_sprite.add_animation({
+            "Idle": bubble_idle
+        }, loop=True)
+        self.bubble_sprite.start_animation("Idle")
+
+        stripe_sprite = ImageManager.load_copy("assets/images/sheet_stinger.png")
+        stripe_tint = stripe_sprite.copy()
+        stripe_tint.fill(self.color)
+        stripe_sprite.blit(stripe_tint, (0, 0), special_flags=pygame.BLEND_ADD)
+        stripe_animation = Animation(stripe_sprite, (5, 1), 5)
+        self.stripe_sprite = Sprite(10)
+        self.stripe_sprite.add_animation({
+            "Idle": stripe_animation
+        }, loop=True)
+        self.stripe_sprite.start_animation("Idle")
+
+        self.surface = ImageManager.load_copy("assets/images/bee.png")
+        self.radius = 24
+        self.frame = frame
 
         self.surface = Bee.get_bee_surf(self.color)
 
@@ -55,7 +85,7 @@ class Bee:
         self.shadow.fill(c.WHITE)
         pygame.draw.circle(self.shadow, c.BLACK, (self.radius, self.radius), self.radius)
         self.shadow.set_colorkey(c.WHITE)
-        self.shadow.set_alpha(50)
+        self.shadow.set_alpha(25)
 
         self.debug = False
 
@@ -120,6 +150,9 @@ class Bee:
         self.age += dt
         self.update_movement(dt, events)
         self.update_collision(dt, events)
+        self.sprite.update(dt, events)
+        self.stripe_sprite.update(dt, events)
+        self.bubble_sprite.update(dt, events)
 
     def update_collision(self, dt, events):
         if self.inactive:
@@ -230,16 +263,26 @@ class Bee:
 
         surface.blit(self.shadow, (self.pose.x + offset[0] - self.radius, self.pose.y + offset[1] + 12 - self.radius))
 
-        stretch_amt = 1 + 0.1 * self.speed / self.TOP_SPEED
-        w = self.surface.get_width() * stretch_amt
-        h = self.surface.get_height() / stretch_amt
-        stretched = pygame.transform.scale(self.surface, (w, h))
+        bee_surf = self.sprite.get_image()
+        bubble_surf = self.bubble_sprite.get_image()
+        stripe_surf = self.stripe_sprite.get_image()
+
+        stretch_amt = 0.95 + 0.15 * self.speed / self.TOP_SPEED
+        w = bee_surf.get_width() * stretch_amt
+        h = bee_surf.get_height() / stretch_amt
+        stretched = pygame.transform.scale(bee_surf, (w, h))
+        bubble_stretched = pygame.transform.scale(bubble_surf, (w, h))
+        stripe_stretched = pygame.transform.scale(stripe_surf, (w, h))
 
         rotated = pygame.transform.rotate(stretched, self.pose.angle + self.flipped * 180)
+        bubble_rotated = pygame.transform.rotate(bubble_stretched, self.pose.angle + self.flipped * 180)
+        stripe_rotated = pygame.transform.rotate(stripe_stretched, self.pose.angle + self.flipped * 180)
+
         x = self.pose.x + offset[0] - rotated.get_width()//2
         y = self.pose.y + offset[1] - rotated.get_height()//2
-
         surface.blit(rotated, (x, y))
+        surface.blit(bubble_rotated, (x, y), special_flags=pygame.BLEND_ADD)
+        surface.blit(stripe_rotated, (x, y), special_flags=pygame.BLEND_MULT)
 
         if self.debug:
             xs = self.stinger_location().x + offset[0]

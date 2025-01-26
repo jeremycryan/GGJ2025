@@ -52,9 +52,9 @@ P2_CONTROL = pygame.K_o, pygame.K_p
 P3_CONTROL = pygame.K_z, pygame.K_x
 P4_CONTROL = pygame.K_n, pygame.K_m
 
-P1_COLOR = RED
-P2_COLOR = BLUE
-P3_COLOR = GREEN
-P4_COLOR = YELLOW
+P1_COLOR = 255, 40, 80
+P2_COLOR = 80, 40, 255
+P3_COLOR = 0, 140, 50
+P4_COLOR = 200, 150, 0
 
 CHARS = " QWERTYUIOPASDFGHJKLZXCVBNMqwertyuiopasdfghjklzxcvbnm1234567890,.<>;"
